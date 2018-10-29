@@ -40,7 +40,7 @@ html, body {
     background-color: #0073e0;
 }
 
-.finish {
+.end {
     background-color: #e20047;
 }
 
@@ -49,36 +49,37 @@ html, body {
 }
 
 .active {
+    background-color: #ff6958;
+}
+
+.possible {
     background-color: #7bec88;
 }
 
-.f_cost {
+.f, .g, .h {
     position: absolute;
+    width: 50%;
+    height: 20px;
+    line-height: 20px;
+    text-align: left;
+    pointer-events: none;
+    font-size: 11px;
+}
+
+.f {
     top: 0;
-    left: 0;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    text-align: center;
+    left: 5px;
     font-weight: bold;
+    font-size: 12px;
 }
 
-.g_cost {
-    position: absolute;
+.g {
     bottom: 0;
-    left: 0;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    text-align: center;
+    left: 5px;
 }
 
-.h_cost {
-    position: absolute;
+.h {
     bottom: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    text-align: center;
+    right: 5px;
+    text-align: right;
 }
