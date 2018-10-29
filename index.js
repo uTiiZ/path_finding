@@ -2,11 +2,14 @@ $(() => {
     draw_grid()
     $('.grid_item').on('mouseover', (e) => {
         e.preventDefault();
+        let node = new Node($(e.target).attr('x'), $(e.target).attr('y'));
         if (e.ctrlKey) {
             $(e.target).addClass('wall')
+            border.push(node);
         }
         if (e.altKey) {
             $(e.target).removeClass('wall')
+            remove_border(node)
         }
     });
 
@@ -27,6 +30,7 @@ const grid_size = 10;
 const size = 65;
 let nodes = [];
 let closed = [];
+let border = [];
 let start = null;
 let parent_node = null;
 let end = null;
@@ -45,6 +49,9 @@ const path_finding = async () => {
     parent_node = start;
     while (!complete) {
         await loop(parent_node)
+        console.log('Open', nodes.length)
+        console.log('Closed', closed.length)
+        console.log('Border', border.length)
         await sleep(500);
     }
 };
@@ -85,7 +92,9 @@ const calculate_node_values = (possible_x, possible_y, node, parent) => {
     if (possible_x < 0 || possible_y < 0 || possible_x >= grid_size * size || possible_y >= grid_size * size)
         return;
 
-    if (search_closed(possible_x, possible_y) != -1 || search_node(possible_x, possible_y) != -1)
+        console.log(possible_x, possible_y, search_border(possible_x, possible_y))
+
+    if (search_closed(possible_x, possible_y) != -1 || search_node(possible_x, possible_y) != -1 || search_border(possible_x, possible_y) != -1)
         return;
 
     node = new Node(possible_x, possible_y);
@@ -151,21 +160,25 @@ const search_closed = (possible_x, possible_y) => {
     return -1;
 }
 
-const bubble_sort = (array) => {
-    let sw = -1;
-    let temp = new Node();
+const remove_border = (node) => {
+    _.remove(border, (n) => {
+        return n.getX() == node.getX() && n.getY() == node.getY();
+    });
+}
 
-    while (sw != 0) {
-        sw = 0;
-        for (let i = 0; i < array.length - 1; i++) {
-            if (array[i].getF() < array[i + 1].getF()) {
-                temp = array[i];
-                array.splice(array[i])
-                array.splice(i + 1, 0, temp)
-                sw = 1;
-            }
+const search_border = (possible_x, possible_y) => {
+    for (let i = 0; i < border.length; i++) {
+        if (border[i].getX() == possible_x && border[i].getY() == possible_y) {
+            return i;
         }
     }
+    return -1;
+}
+
+const bubble_sort = (array) => {
+    array.sort((a, b) => {
+        return a.getF() - b.getF()
+    })
 }
 
 const draw_grid = () => {

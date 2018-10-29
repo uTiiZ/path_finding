@@ -43,17 +43,17 @@ class Node {
 
     setG(g) {
         this.g = parseInt(g);
-        this.getElement().find('span.g').text(g / 65);
+        this.getElement().find('span.g').text(g);
     }
 
     setH(h) {
         this.h = parseInt(h);
-        this.getElement().find('span.h').text(h / 65);
+        this.getElement().find('span.h').text(h);
     }
 
     setF(f) {
         this.f = parseInt(f);
-        this.getElement().find('span.f').text(f / 65);
+        this.getElement().find('span.f').text(f);
     }
 
     setParent(parent) {
