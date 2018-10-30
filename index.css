@@ -19,8 +19,6 @@ html, body {
 #grid {
     position: relative;
     margin: auto;
-    width: 650px; 
-    height: 650px; 
     border: 1px solid #bbb;
     box-sizing: content-box;
     top: 50%;
@@ -30,8 +28,6 @@ html, body {
 .grid_item {
     display: block;
     position: relative;
-    width: 65px;
-    height: 65px;
     border: 1px solid #bbb;
     float: left;
 }
@@ -54,6 +50,14 @@ html, body {
 
 .possible {
     background-color: #7bec88;
+}
+
+.path {
+    background-color: #21b5ff;
+}
+
+.portal {
+    background-color: #ffe821;
 }
 
 .f, .g, .h {

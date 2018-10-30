@@ -1,36 +1,60 @@
 $(() => {
     draw_grid()
-    $('.grid_item').on('mouseover', (e) => {
+    $('.grid_item').on('mouseover', async (e) => {
         e.preventDefault();
-        let node = new Node($(e.target).attr('x'), $(e.target).attr('y'));
+        let node = new Node($(e.target).attr('x'), $(e.target).attr('y'), like_dofus, size);
         if (e.ctrlKey) {
             $(e.target).addClass('wall')
-            border.push(node);
-        }
-        if (e.altKey) {
+            borders.push(node);
+        } else if (e.altKey) {
             $(e.target).removeClass('wall')
-            remove_border(node)
+            remove_borders(node)
+        } else if ($('.start')[0] && !$(e.target).hasClass('start') && like_dofus) {
+            $('#grid .row').children().removeClass('end')
+            $('#grid .row').children().removeClass('path')
+            $(e.target).addClass('end')
+            await path_finding();
         }
     });
 
 
-    $('.grid_item').on('click', (e) => {
+    $('.grid_item').on('click', async (e) => {
         e.preventDefault();
+        $('#grid .row .grid_item').children().text('')
         if (e.shiftKey) {
-            $(e.target).addClass('start')
+            $('#grid .row').children().removeClass('start')
+            $('#grid .row').children().removeClass('end')
+            $('#grid .row').children().removeClass('path')
+            $('#grid .row').children().removeClass('possible')
+            $('#grid .row').children().removeClass('active')
+            $(e.target).toggleClass('start')
+        } else if (e.ctrlKey) {
+            $(e.target).toggleClass('portal')
+            let node = new Node($(e.target).attr('x'), $(e.target).attr('y'), like_dofus, size);
+            portals.push(node)
         } else {
+            $('#grid .row').children().removeClass('end')
+            $('#grid .row').children().removeClass('path')
+            $('#grid .row').children().removeClass('possible')
+            $('#grid .row').children().removeClass('active')
             $(e.target).toggleClass('end')
+            let date_begin = Date.now();
+            await path_finding();
+            let date_end = Date.now();
+            let time = date_end - date_begin;
+            console.log(`Time - ${time}`)
         }
-        nodes = [];
-        path_finding();
     });
 });
-
-const grid_size = 10;
-const size = 65;
+const grid = 650;
+const item = 10;
+const size = grid / item;
+const like_dofus = false;
 let nodes = [];
 let closed = [];
-let border = [];
+let borders = [];
+let path = [];
+let portals = [];
 let start = null;
 let parent_node = null;
 let end = null;
@@ -42,17 +66,24 @@ const sleep = (ms) => {
 };
 
 const path_finding = async () => {
-    start = new Node($('.start').attr('x'), $('.start').attr('y'));
+    nodes = [];
+    closed = [];
+    path = [];
+    start = null;
+    parent_node = null;
+    end = null;
+    no_path = false;
+    complete = false;
+
+    start = new Node($('.start').attr('x'), $('.start').attr('y'), like_dofus, size);
     start.setG(0);
     closed.push(start);
-    end = new Node($('.end').attr('x'), $('.end').attr('y'));
+    end = new Node($('.end').attr('x'), $('.end').attr('y'), like_dofus, size);
     parent_node = start;
-    while (!complete) {
+    while (!complete && !no_path) {
         await loop(parent_node)
-        console.log('Open', nodes.length)
-        console.log('Closed', closed.length)
-        console.log('Border', border.length)
-        await sleep(500);
+        if (!like_dofus)
+            await sleep(25)
     }
 };
 
@@ -80,27 +111,31 @@ const loop = async (parent) => {
 
     if (Node.isEqual(parent_node, end)) {
         console.log('Completed');
+        connect_path();
         complete = true;
         return;
     }
+
     remove_node(parent_node);
     closed.push(parent_node);
     parent_node.setActive();
 }
 
 const calculate_node_values = (possible_x, possible_y, node, parent) => {
-    if (possible_x < 0 || possible_y < 0 || possible_x >= grid_size * size || possible_y >= grid_size * size)
+    if (possible_x < 0 || possible_y < 0 || possible_x >= item * size || possible_y >= item * size)
         return;
 
-        console.log(possible_x, possible_y, search_border(possible_x, possible_y))
 
-    if (search_closed(possible_x, possible_y) != -1 || search_node(possible_x, possible_y) != -1 || search_border(possible_x, possible_y) != -1)
+    if (search_closed(possible_x, possible_y) != -1 || search_node(possible_x, possible_y) != -1 || search_borders(possible_x, possible_y) != -1)
         return;
 
-    node = new Node(possible_x, possible_y);
-    node.setParent(parent);
+    node = new Node(possible_x, possible_y, like_dofus, size);
+    node.setPortal(search_portals(possible_x, possible_y) != -1);
     if (!Node.isEqual(node, end))
         node.setPossible();
+    else
+        node = end
+    node.setParent(parent);
 
     //Calculating G
     g_x = node.getX() - parent.getX();
@@ -121,20 +156,62 @@ const calculate_node_values = (possible_x, possible_y, node, parent) => {
     nodes.push(node)
 };
 
+const connect_path = () => {
+    if (path.length == 0) {
+        let p_node = end.getParent();
+
+        while (!Node.isEqual(p_node, start)) {
+            path.push(p_node);
+
+            for (let i = 0; i < closed.length; i++) {
+                let current = closed[i];
+
+                if (Node.isEqual(current, p_node)) {
+                    p_node = current.getParent();
+                    break;
+                }
+            }
+        }
+        path.reverse()
+        path.map(async (node) => {
+            node.setPath();
+        })
+    }
+};
+
+const smalest = (a, b)  => {
+    return a <= b ? a : b;
+}
+
 const lowest_f = () => {
     if (nodes.length > 0) {
         /* return nodes.sort((a, b) => { return a.getF() - b.getF() })[0]; */
-        bubble_sort(nodes);
+        bubble_sort();
         return nodes[0];
     }
     return null;
+};
+
+const bubble_sort = () => {
+    let map = nodes.map((node, index) => {
+        return {
+            index,
+            node
+        }
+    });
+    map.sort((a, b) => {
+        return a.node.getF() - b.node.getF() || a.index - b.index;
+    })
+    nodes = map.map((e) => {
+        return e.node
+    });
 };
 
 const remove_node = (node) => {
     _.remove(nodes, (n) => {
         return n.getX() == node.getX() && n.getY() == node.getY();
     });
-}
+};
 
 const search_node = (possible_x, possible_y) => {
     for (let i = 0; i < nodes.length; i++) {
@@ -143,13 +220,13 @@ const search_node = (possible_x, possible_y) => {
         }
     }
     return -1;
-}
+};
 
 const remove_closed = (node) => {
     _.remove(closed, (n) => {
         return n.getX() == node.getX() && n.getY() == node.getY();
     });
-}
+};
 
 const search_closed = (possible_x, possible_y) => {
     for (let i = 0; i < closed.length; i++) {
@@ -158,46 +235,56 @@ const search_closed = (possible_x, possible_y) => {
         }
     }
     return -1;
-}
+};
 
-const remove_border = (node) => {
-    _.remove(border, (n) => {
+const remove_borders = (node) => {
+    _.remove(borders, (n) => {
         return n.getX() == node.getX() && n.getY() == node.getY();
     });
-}
+};
 
-const search_border = (possible_x, possible_y) => {
-    for (let i = 0; i < border.length; i++) {
-        if (border[i].getX() == possible_x && border[i].getY() == possible_y) {
+const search_borders = (possible_x, possible_y) => {
+    for (let i = 0; i < borders.length; i++) {
+        if (borders[i].getX() == possible_x && borders[i].getY() == possible_y) {
             return i;
         }
     }
     return -1;
-}
+};
 
-const bubble_sort = (array) => {
-    array.sort((a, b) => {
-        return a.getF() - b.getF()
-    })
-}
+const remove_portals = (node) => {
+    _.remove(portals, (n) => {
+        return n.getX() == node.getX() && n.getY() == node.getY();
+    });
+};
+
+const search_portals = (possible_x, possible_y) => {
+    for (let i = 0; i < portals.length; i++) {
+        if (portals[i].getX() == possible_x && portals[i].getY() == possible_y) {
+            return i;
+        }
+    }
+    return -1;
+};
 
 const draw_grid = () => {
-    for (let y = 0; y < grid_size; y++) {
+    let g = $('#grid');
+    g.css({
+        width: grid,
+        height: grid
+    })
+    for (let y = 0; y < item; y++) {
         let row = $('<div class="row"></div>');
-        for (let x = 0; x < grid_size; x++) {
-            let grid_item = $('<span class="grid_item"></span>');
+        for (let x = 0; x < item; x++) {
+            let grid_item = $('<span class="grid_item" style="width: ' + size + 'px; height: ' + size + 'px;"></span>');
             let span_g = $('<span class="g"></span>');
             let span_h = $('<span class="h"></span>');
             let span_f = $('<span class="f"></span>');
             grid_item.append(span_g).append(span_h).append(span_f);
-            if (x == 1 && y == 4)
-                grid_item.addClass('start');
-            /* if ((x == 4 && y == 1) || (x == 4 && y == 2) || (x == 4 && y == 3) || (x == 4 && y == 4) || (x == 4 && y == 5) || (x == 4 && y == 6))
-                grid_item.addClass('wall'); */
             grid_item.attr('x', x * size);
             grid_item.attr('y', y * size);
             row.append(grid_item);
         }
-        $('#grid').append(row);
+        g.append(row);
     }
 };
