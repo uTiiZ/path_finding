@@ -144,8 +144,8 @@ const calculate_node_values = (possible_x, possible_y, node, parent) => {
     node.setG(g);
 
     //Calculating H
-    h_x = Math.abs(end.getX() - node.getX());
-    h_y = Math.abs(end.getY() - node.getY());
+    h_x = Math.abs(smalest(end.getX(), portals[0].getX()) - node.getX());
+    h_y = Math.abs(smalest(end.getY(), portals[0].getY()) - node.getY());
     h = h_x + h_y;
     node.setH(h);
 
@@ -185,7 +185,6 @@ const smalest = (a, b)  => {
 
 const lowest_f = () => {
     if (nodes.length > 0) {
-        /* return nodes.sort((a, b) => { return a.getF() - b.getF() })[0]; */
         bubble_sort();
         return nodes[0];
     }
