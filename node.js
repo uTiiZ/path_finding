@@ -39,6 +39,10 @@ class Node {
         return this.is_portal;
     }
 
+    hasBeenCrossed() {
+        return this.has_been_crossed;
+    }
+
     setX(x) {
         this.x = parseInt(x);
     }
@@ -68,6 +72,10 @@ class Node {
 
     setPortal(is_portal) {
         this.is_portal = is_portal;
+    }
+
+    setHasBeenCrossed(has_been_crossed) {
+        this.has_been_crossed = has_been_crossed;
     }
 
     getElement() {

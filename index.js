@@ -29,9 +29,12 @@ $(() => {
             $('#grid .row').children().removeClass('active')
             $(e.target).toggleClass('start')
         } else if (e.ctrlKey) {
-            $(e.target).toggleClass('portal')
-            let node = new Node($(e.target).attr('x'), $(e.target).attr('y'), like_dofus, size);
-            portals.push(node)
+            if (portals.length != 2) {
+                $(e.target).toggleClass('portal')
+                let node = new Node($(e.target).attr('x'), $(e.target).attr('y'), like_dofus, size);
+                node.setHasBeenCrossed(false);
+                portals.push(node);
+            }
         } else {
             $('#grid .row').children().removeClass('end')
             $('#grid .row').children().removeClass('path')
@@ -46,8 +49,8 @@ $(() => {
         }
     });
 });
-const grid = 650;
-const item = 10;
+const grid = 1000;
+const item = 20;
 const size = grid / item;
 const like_dofus = false;
 let nodes = [];
@@ -83,7 +86,7 @@ const path_finding = async () => {
     while (!complete && !no_path) {
         await loop(parent_node)
         if (!like_dofus)
-            await sleep(25)
+            await sleep(10)
     }
 };
 
@@ -99,21 +102,29 @@ const loop = async (parent) => {
             }
             possible_x = (parent.getX() - size) + (x * size);
             possible_y = (parent.getY() - size) + (y * size);
-            calculate_node_values(possible_x, possible_y, node, parent);
+            calculate_node_values(possible_x, possible_y, parent);
         }
     }
     parent_node = lowest_f();
+
     if (parent_node == null) {
-        console.log('End of path');
         no_path = true;
         return;
     }
 
     if (Node.isEqual(parent_node, end)) {
-        console.log('Completed');
+        console.clear();
         connect_path();
+        console.log(path.length)
         complete = true;
         return;
+    }
+
+    if (parent_node.isPortal()) {
+        if (Node.isEqual(parent_node, portals[0])) {
+            remove_all_nodes()
+            calculate_node_values(portals[1].getX(), portals[1].getY(), parent_node.getParent());
+        }
     }
 
     remove_node(parent_node);
@@ -121,7 +132,7 @@ const loop = async (parent) => {
     parent_node.setActive();
 }
 
-const calculate_node_values = (possible_x, possible_y, node, parent) => {
+const calculate_node_values = (possible_x, possible_y, parent) => {
     if (possible_x < 0 || possible_y < 0 || possible_x >= item * size || possible_y >= item * size)
         return;
 
@@ -144,8 +155,21 @@ const calculate_node_values = (possible_x, possible_y, node, parent) => {
     node.setG(g);
 
     //Calculating H
-    h_x = Math.abs(smalest(end.getX(), portals[0].getX()) - node.getX());
-    h_y = Math.abs(smalest(end.getY(), portals[0].getY()) - node.getY());
+    if (portals.length > 0 && !portals[0].hasBeenCrossed()) {
+        if (end.getX() + end.getY() <= portals[0].getX() + portals[0].getY()) {
+            h_x = Math.abs(end.getX() - node.getX());
+            h_y = Math.abs(end.getY() - node.getY());
+        } else {
+            h_x = Math.abs(portals[0].getX() - node.getX());
+            h_y = Math.abs(portals[0].getY() - node.getY());
+            if (Node.isEqual(node, portals[0])) {
+                portals[0].setHasBeenCrossed(true);
+            }
+        }
+    } else {
+        h_x = Math.abs(end.getX() - node.getX());
+        h_y = Math.abs(end.getY() - node.getY());
+    }
     h = h_x + h_y;
     node.setH(h);
 
@@ -173,14 +197,14 @@ const connect_path = () => {
             }
         }
         path.reverse()
-        path.map(async (node) => {
+        path.map((node) => {
             node.setPath();
         })
     }
 };
 
-const smalest = (a, b)  => {
-    return a <= b ? a : b;
+const smalest = (a, b) => {
+    return a < b ? a : b;
 }
 
 const lowest_f = () => {
@@ -204,6 +228,10 @@ const bubble_sort = () => {
     nodes = map.map((e) => {
         return e.node
     });
+};
+
+const remove_all_nodes = () => {
+    nodes = []
 };
 
 const remove_node = (node) => {
