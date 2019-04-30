@@ -53,17 +53,17 @@ class Node {
 
     setG(g) {
         this.g = parseInt(g);
-        (!this.boolean && size > 50) && this.getElement().find('span.g').text(g);
+        (this.boolean && size >= 50) && this.getElement().find('span.g').text(g);
     }
 
     setH(h) {
         this.h = parseInt(h);
-        (!this.boolean && size > 50)  && this.getElement().find('span.h').text(h);
+        (this.boolean && size >= 50)  && this.getElement().find('span.h').text(h);
     }
 
     setF(f) {
         this.f = parseInt(f);
-        (!this.boolean && size > 50)  && this.getElement().find('span.f').text(f);
+        (this.boolean && size >= 50)  && this.getElement().find('span.f').text(f);
     }
 
     setParent(parent) {
@@ -83,11 +83,11 @@ class Node {
     }
 
     setPossible() {
-        !this.boolean && this.getElement().addClass('possible');
+        this.boolean && this.getElement().addClass('possible');
     }
 
     setActive() {
-        !this.boolean && this.getElement().addClass('active').removeClass('possible');
+        this.boolean && this.getElement().addClass('active').removeClass('possible');
     }
 
     setPath() {
